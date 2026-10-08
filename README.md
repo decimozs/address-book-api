@@ -40,7 +40,7 @@ ruff check .
 | Method | Path | Purpose |
 |---|---|---|
 | POST | `/addresses` | Create an address |
-| GET | `/addresses` | List (`skip`, `limit`) |
+| GET | `/addresses` | List a page (`skip`, `limit`); returns `items`, `total`, `skip`, `limit` |
 | GET | `/addresses/{id}` | Get one |
 | PATCH | `/addresses/{id}` | Partial update |
 | DELETE | `/addresses/{id}` | Delete |

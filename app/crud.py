@@ -1,7 +1,7 @@
 """Database operations, kept separate from HTTP concerns."""
 import logging
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -34,9 +34,11 @@ def get_address(db: Session, address_id: int) -> Address | None:
     return db.get(Address, address_id)
 
 
-def list_addresses(db: Session, skip: int = 0, limit: int = 100) -> list[Address]:
+def list_addresses(db: Session, skip: int = 0, limit: int = 100) -> tuple[list[Address], int]:
+    """Return one page of addresses and the total number stored."""
     stmt = select(Address).order_by(Address.id).offset(skip).limit(limit)
-    return list(db.scalars(stmt))
+    total = db.scalar(select(func.count()).select_from(Address)) or 0
+    return list(db.scalars(stmt)), total
 
 
 def update_address(db: Session, address: Address, data: AddressUpdate) -> Address:

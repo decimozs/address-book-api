@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from app import crud
 from app.dependencies import DbSession
 from app.models import Address
-from app.schemas import AddressCreate, AddressNearby, AddressRead, AddressUpdate
+from app.schemas import AddressCreate, AddressNearby, AddressPage, AddressRead, AddressUpdate
 
 router = APIRouter(prefix="/addresses", tags=["addresses"])
 
@@ -69,14 +69,24 @@ def get_nearby_addresses(
     ]
 
 
-@router.get("", response_model=list[AddressRead], summary="List addresses")
+@router.get("", response_model=AddressPage, summary="List addresses")
 def list_addresses(
     db: DbSession,
     skip: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
-) -> list[Address]:
-    """List stored addresses ordered by id, with `skip`/`limit` pagination."""
-    return crud.list_addresses(db, skip, limit)
+) -> AddressPage:
+    """List stored addresses ordered by id.
+
+    Returns the requested page in `items` plus `total` (all stored addresses),
+    so clients know how many pages remain.
+    """
+    items, total = crud.list_addresses(db, skip, limit)
+    return AddressPage(
+        items=[AddressRead.model_validate(a) for a in items],
+        total=total,
+        skip=skip,
+        limit=limit,
+    )
 
 
 @router.get(

@@ -58,3 +58,12 @@ class AddressRead(AddressBase):
 
 class AddressNearby(AddressRead):
     distance_km: float
+
+
+class AddressPage(BaseModel):
+    """One page of addresses plus the figures a client needs to paginate."""
+
+    items: list[AddressRead]
+    total: int
+    skip: int
+    limit: int

@@ -112,8 +112,12 @@ def test_list_pagination(client, sample):
         client.post("/addresses", json={**sample, "name": f"Place {i}"})
 
     page = client.get("/addresses", params={"skip": 1, "limit": 2}).json()
-    assert [a["name"] for a in page] == ["Place 1", "Place 2"]
-    assert client.get("/addresses", params={"skip": 10}).json() == []
+    assert [a["name"] for a in page["items"]] == ["Place 1", "Place 2"]
+    assert (page["total"], page["skip"], page["limit"]) == (5, 1, 2)
+
+    beyond = client.get("/addresses", params={"skip": 10}).json()
+    assert beyond["items"] == []
+    assert beyond["total"] == 5
 
 
 @pytest.mark.parametrize("params", [{"skip": -1}, {"limit": 0}, {"limit": 501}])
