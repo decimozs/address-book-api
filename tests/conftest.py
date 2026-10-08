@@ -37,6 +37,6 @@ def sample():
         "street": "1 Main St",
         "city": "Manila",
         "country": "Philippines",
-        "latitude": 14.5995,
+        "latitude": 14.5996
         "longitude": 120.9842,
     }
