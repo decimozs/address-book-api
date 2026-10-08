@@ -105,3 +105,69 @@ def test_update_rejects_blank_text(client, sample):
     created = client.post("/addresses", json=sample).json()
     resp = client.patch(f"/addresses/{created['id']}", json={"city": "   "})
     assert resp.status_code == 422
+
+
+def test_list_pagination(client, sample):
+    for i in range(5):
+        client.post("/addresses", json={**sample, "name": f"Place {i}"})
+
+    page = client.get("/addresses", params={"skip": 1, "limit": 2}).json()
+    assert [a["name"] for a in page] == ["Place 1", "Place 2"]
+    assert client.get("/addresses", params={"skip": 10}).json() == []
+
+
+@pytest.mark.parametrize("params", [{"skip": -1}, {"limit": 0}, {"limit": 501}])
+def test_list_rejects_bad_pagination(client, params):
+    assert client.get("/addresses", params=params).status_code == 422
+
+
+@pytest.mark.parametrize(
+    "payload", [{"latitude": 100}, {"longitude": -200}, {"name": ""}, {"latitude": "x"}]
+)
+def test_patch_rejects_invalid_payload(client, sample, payload):
+    created = client.post("/addresses", json=sample).json()
+    assert client.patch(f"/addresses/{created['id']}", json=payload).status_code == 422
+
+
+def test_patch_empty_body_changes_nothing(client, sample):
+    created = client.post("/addresses", json=sample).json()
+    resp = client.patch(f"/addresses/{created['id']}", json={})
+    assert resp.status_code == 200
+    assert resp.json() == created
+
+
+def test_patch_can_clear_optional_field(client, sample):
+    created = client.post("/addresses", json={**sample, "state": "NCR"}).json()
+    resp = client.patch(f"/addresses/{created['id']}", json={"state": None})
+    assert resp.json()["state"] is None
+
+
+def test_text_is_trimmed_on_create(client, sample):
+    resp = client.post("/addresses", json={**sample, "city": "  Manila  "})
+    assert resp.json()["city"] == "Manila"
+
+
+def test_nearby_radius_boundary(client, sample):
+    from app.geo import haversine_km
+
+    client.post("/addresses", json=sample)
+    lat, lon = 14.6995, 120.9842  # ~11.1 km north of the stored address
+    exact = haversine_km(lat, lon, sample["latitude"], sample["longitude"])
+
+    def search(radius):
+        return client.get(
+            "/addresses/nearby",
+            params={"latitude": lat, "longitude": lon, "distance_km": radius},
+        ).json()
+
+    assert len(search(exact + 0.01)) == 1
+    assert search(exact - 0.01) == []
+
+
+def test_nearby_finds_address_across_antimeridian(client, sample):
+    client.post("/addresses", json={**sample, "latitude": 0, "longitude": -179.95})
+    resp = client.get(
+        "/addresses/nearby",
+        params={"latitude": 0, "longitude": 179.95, "distance_km": 20},
+    )
+    assert len(resp.json()) == 1
