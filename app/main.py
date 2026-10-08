@@ -9,7 +9,7 @@ from app.database import Base, engine
 from app.errors import register_exception_handlers
 from app.logging_config import setup_logging
 from app.middleware import log_requests
-from app.routers import addresses
+from app.routers import addresses, health
 
 setup_logging(settings.log_level)
 logger = logging.getLogger(__name__)
@@ -30,4 +30,5 @@ app = FastAPI(
 )
 register_exception_handlers(app)
 app.middleware("http")(log_requests)
+app.include_router(health.router)
 app.include_router(addresses.router)
