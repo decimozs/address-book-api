@@ -4,3 +4,6 @@ __pycache__/
 .pytest_cache/
 *.db
 .env
+.coverage
+.mypy_cache/
+.ruff_cache/
