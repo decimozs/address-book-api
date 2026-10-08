@@ -2,7 +2,9 @@
 from collections.abc import Iterator
 
 from sqlalchemy import create_engine, event
+from sqlalchemy.engine.interfaces import DBAPIConnection
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.pool import ConnectionPoolEntry
 
 from app.config import settings
 
@@ -13,7 +15,7 @@ engine = create_engine(
 
 
 @event.listens_for(engine, "connect")
-def _configure_sqlite(dbapi_connection, _record) -> None:
+def _configure_sqlite(dbapi_connection: DBAPIConnection, _record: ConnectionPoolEntry) -> None:
     """WAL lets readers and a writer coexist; busy_timeout makes concurrent
     writers (e.g. several uvicorn workers) wait instead of failing with
     'database is locked'."""
