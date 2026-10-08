@@ -2,16 +2,13 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy.orm import Session
 
 from app import crud
-from app.database import get_db
+from app.dependencies import DbSession
 from app.models import Address
 from app.schemas import AddressCreate, AddressNearby, AddressRead, AddressUpdate
 
 router = APIRouter(prefix="/addresses", tags=["addresses"])
-
-DbSession = Annotated[Session, Depends(get_db)]
 
 
 def get_address_or_404(address_id: int, db: DbSession) -> Address:
