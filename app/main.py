@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from app.config import settings
 from app.database import Base, engine
 from app.logging_config import setup_logging
+from app.middleware import log_requests
 from app.routers import addresses
 
 setup_logging(settings.log_level)
@@ -26,4 +27,5 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+app.middleware("http")(log_requests)
 app.include_router(addresses.router)
