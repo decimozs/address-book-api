@@ -40,13 +40,25 @@ class AddressUpdate(BaseModel):
 
     @field_validator("name", "street", "city", "country")
     @classmethod
-    def not_blank(cls, value: str | None) -> str | None:
-        """Same trimming/blank rule as on create, applied only when supplied."""
+    def not_blank(cls, value: str | None) -> str:
+        """Same trimming/blank rule as on create, applied only when supplied.
+
+        Required columns cannot be cleared, so an explicit null is rejected here
+        rather than failing later at the database.
+        """
         if value is None:
-            return None
+            raise ValueError("must not be null")
         value = value.strip()
         if not value:
             raise ValueError("must not be blank")
+        return value
+
+    @field_validator("latitude", "longitude")
+    @classmethod
+    def not_null(cls, value: float | None) -> float:
+        """Coordinates can be changed but not cleared."""
+        if value is None:
+            raise ValueError("must not be null")
         return value
 
 

@@ -126,7 +126,19 @@ def test_list_rejects_bad_pagination(client, params):
 
 
 @pytest.mark.parametrize(
-    "payload", [{"latitude": 100}, {"longitude": -200}, {"name": ""}, {"latitude": "x"}]
+    "payload",
+    [
+        {"latitude": 100},
+        {"longitude": -200},
+        {"name": ""},
+        {"latitude": "x"},
+        {"name": None},
+        {"street": None},
+        {"city": None},
+        {"country": None},
+        {"latitude": None},
+        {"longitude": None},
+    ],
 )
 def test_patch_rejects_invalid_payload(client, sample, payload):
     created = client.post("/addresses", json=sample).json()
