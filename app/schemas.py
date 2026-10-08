@@ -38,6 +38,17 @@ class AddressUpdate(BaseModel):
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
 
+    @field_validator("name", "street", "city", "country")
+    @classmethod
+    def not_blank(cls, value: str | None) -> str | None:
+        """Same trimming/blank rule as on create, applied only when supplied."""
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            raise ValueError("must not be blank")
+        return value
+
 
 class AddressRead(AddressBase):
     model_config = ConfigDict(from_attributes=True)

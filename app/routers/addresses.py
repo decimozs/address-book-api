@@ -20,6 +20,9 @@ def get_address_or_404(address_id: int, db: DbSession) -> Address:
 
 ExistingAddress = Annotated[Address, Depends(get_address_or_404)]
 
+CONFLICT: dict[int | str, dict[str, Any]] = {
+    status.HTTP_409_CONFLICT: {"description": "Address already exists"}
+}
 NOT_FOUND: dict[int | str, dict[str, Any]] = {
     status.HTTP_404_NOT_FOUND: {"description": "Address not found"}
 }
@@ -29,10 +32,14 @@ NOT_FOUND: dict[int | str, dict[str, Any]] = {
     "",
     response_model=AddressRead,
     status_code=status.HTTP_201_CREATED,
+    responses=CONFLICT,
     summary="Create an address",
 )
 def create_address(data: AddressCreate, db: DbSession) -> Address:
-    """Validate and store a new address, including its coordinates."""
+    """Validate and store a new address, including its coordinates.
+
+    Returns 409 if an address with the same name, street, city and country exists.
+    """
     return crud.create_address(db, data)
 
 
@@ -86,7 +93,7 @@ def read_address(address: ExistingAddress) -> Address:
 @router.patch(
     "/{address_id}",
     response_model=AddressRead,
-    responses=NOT_FOUND,
+    responses={**NOT_FOUND, **CONFLICT},
     summary="Update an address",
 )
 def update_address(

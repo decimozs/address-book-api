@@ -77,3 +77,31 @@ def test_openapi_documents_404_and_summaries(client):
     get_one = spec["paths"]["/addresses/{address_id}"]["get"]
     assert "404" in get_one["responses"]
     assert spec["paths"]["/addresses"]["post"]["summary"] == "Create an address"
+
+
+def test_duplicate_create_returns_409(client, sample):
+    assert client.post("/addresses", json=sample).status_code == 201
+    resp = client.post("/addresses", json=sample)
+    assert resp.status_code == 409
+    assert resp.json() == {"detail": "Address already exists"}
+
+
+def test_same_street_different_name_is_allowed(client, sample):
+    client.post("/addresses", json=sample)
+    other = {**sample, "name": "Office"}
+    assert client.post("/addresses", json=other).status_code == 201
+
+
+def test_update_into_duplicate_returns_409_and_keeps_data(client, sample):
+    client.post("/addresses", json=sample)
+    second = client.post("/addresses", json={**sample, "name": "Office"}).json()
+
+    resp = client.patch(f"/addresses/{second['id']}", json={"name": "Home"})
+    assert resp.status_code == 409
+    assert client.get(f"/addresses/{second['id']}").json()["name"] == "Office"
+
+
+def test_update_rejects_blank_text(client, sample):
+    created = client.post("/addresses", json=sample).json()
+    resp = client.patch(f"/addresses/{created['id']}", json={"city": "   "})
+    assert resp.status_code == 422

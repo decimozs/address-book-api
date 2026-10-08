@@ -2,8 +2,10 @@
 import logging
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.exceptions import DuplicateAddressError
 from app.geo import bounding_box, haversine_km
 from app.models import Address
 from app.schemas import AddressCreate, AddressUpdate
@@ -11,10 +13,19 @@ from app.schemas import AddressCreate, AddressUpdate
 logger = logging.getLogger(__name__)
 
 
+def _commit(db: Session) -> None:
+    """Commit, translating a unique-constraint violation into a domain error."""
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise DuplicateAddressError("Address already exists") from exc
+
+
 def create_address(db: Session, data: AddressCreate) -> Address:
     address = Address(**data.model_dump())
     db.add(address)
-    db.commit()
+    _commit(db)
     logger.info("Created address id=%s", address.id)
     return address
 
@@ -32,7 +43,7 @@ def update_address(db: Session, address: Address, data: AddressUpdate) -> Addres
     changes = data.model_dump(exclude_unset=True)
     for field, value in changes.items():
         setattr(address, field, value)
-    db.commit()
+    _commit(db)
     logger.info("Updated address id=%s fields=%s", address.id, sorted(changes))
     return address
 

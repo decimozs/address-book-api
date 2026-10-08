@@ -5,6 +5,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.exceptions import DuplicateAddressError
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,5 +18,11 @@ async def database_error_handler(request: Request, exc: SQLAlchemyError) -> JSON
     return JSONResponse(status_code=500, content={"detail": "Internal database error"})
 
 
+async def duplicate_address_handler(request: Request, exc: DuplicateAddressError) -> JSONResponse:
+    logger.warning("Duplicate address rejected on %s %s", request.method, request.url.path)
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
 def register_exception_handlers(app: FastAPI) -> None:
+    app.add_exception_handler(DuplicateAddressError, duplicate_address_handler)  # type: ignore[arg-type]
     app.add_exception_handler(SQLAlchemyError, database_error_handler)  # type: ignore[arg-type]
