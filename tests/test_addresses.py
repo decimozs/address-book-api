@@ -70,3 +70,10 @@ def test_nearby_validates_params(client, sample):
         params={"latitude": 0, "longitude": 0, "distance_km": -1},
     )
     assert resp.status_code == 422
+
+
+def test_openapi_documents_404_and_summaries(client):
+    spec = client.get("/openapi.json").json()
+    get_one = spec["paths"]["/addresses/{address_id}"]["get"]
+    assert "404" in get_one["responses"]
+    assert spec["paths"]["/addresses"]["post"]["summary"] == "Create an address"
