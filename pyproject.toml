@@ -6,3 +6,8 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.mypy]
+files = ["app"]
+strict = true
+warn_unused_ignores = true
