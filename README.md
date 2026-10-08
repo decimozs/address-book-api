@@ -9,7 +9,7 @@ Python 3.11+ (developed on 3.12). Docker is optional.
 ## Run locally
 
 ```bash
-git clone <repo-url> address-book-api
+git clone https://github.com/decimozs/address-book-api.git
 cd address-book-api
 python3 -m venv .venv
 source .venv/bin/activate
