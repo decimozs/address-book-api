@@ -30,9 +30,9 @@ docker run --rm -p 8000:8000 -v address_book_data:/data address-book-api
 ## Run tests and lint
 
 ```bash
-pip install ruff
-pytest
+pytest          # also prints a coverage report
 ruff check .
+mypy
 ```
 
 ## Endpoints
@@ -44,6 +44,7 @@ ruff check .
 | GET | `/addresses/{id}` | Get one |
 | PATCH | `/addresses/{id}` | Partial update |
 | DELETE | `/addresses/{id}` | Delete |
+| GET | `/health` | Liveness check; 503 if the database is unreachable |
 | GET | `/addresses/nearby` | Addresses within `distance_km` of `latitude`/`longitude`, nearest first |
 
 Example:
@@ -58,12 +59,15 @@ curl 'localhost:8000/addresses/nearby?latitude=14.55&longitude=121.05&distance_k
 
 Validation: latitude in [-90, 90], longitude in [-180, 180], required text
 fields non-blank and length-limited, `distance_km` > 0. Invalid input returns 422.
+Creating or updating into an address that already exists (same name, street, city and
+country) returns 409. Unexpected database errors return a clean 500 and are logged.
 
 ## Configuration
 Environment variables (or `.env`), prefix `ADDRESS_BOOK_`:
 `DATABASE_URL` (default `sqlite:///./address_book.db`), `LOG_LEVEL` (default `INFO`).
 
 ## Design notes
+- **Observability:** every request is logged with method, path, status, duration and an `X-Request-ID` (echoed in the response header).
 - **Layout:** `routers/` (HTTP), `crud.py` (DB logic), `schemas.py` (Pydantic), `models.py` (SQLAlchemy), `geo.py` (distance math).
 - **Nearby search:** an indexed bounding-box filter in SQL narrows candidates, then the haversine formula computes exact distance.
 - **Concurrency:** endpoints are sync `def`, so FastAPI runs them in a threadpool, which suits blocking SQLAlchemy. Python's GIL limits CPU parallelism per process; scale with `uvicorn app.main:app --workers N`. SQLite runs in WAL mode with a busy timeout so several workers can share the file.
